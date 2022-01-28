@@ -21,7 +21,7 @@ export class BastionStack extends Stack {
       machineImage: aws_ec2.MachineImage.latestWindows(
         aws_ec2.WindowsVersion.WINDOWS_SERVER_2022_ENGLISH_FULL_BASE
       ),
-      vpc: aws_ec2.Vpc.fromLookup(this, "DefaultVpc", {isDefault: true}),
+      vpc: aws_ec2.Vpc.fromLookup(this, "DefaultVpc", { isDefault: true }),
       vpcSubnets: { subnetType: aws_ec2.SubnetType.PUBLIC },
     });
 
@@ -35,7 +35,9 @@ export class BastionStack extends Stack {
       )
     );
 
-    const ssoInstanceArn = this.node.tryGetContext("ssoInstanceArn:account=" + this.account);
+    const ssoInstanceArn = this.node.tryGetContext(
+      "ssoInstanceArn:account=" + this.account
+    );
 
     if (!ssoInstanceArn) {
       console.error(
@@ -43,12 +45,17 @@ export class BastionStack extends Stack {
       );
     }
 
-    const permissionSet = new aws_sso.CfnPermissionSet(this, "PermissionSet", {
-      instanceArn: ssoInstanceArn,
-      inlinePolicy,
-      name: "BastionPermissionSet",
-      sessionDuration: 'PT8H',
-      relayStateType: 'https://console.aws.amazon.com/systems-manager/managed-instances/rdp-connect'
-    });
+    const permissionSet = new aws_sso.CfnPermissionSet(
+      this,
+      "BastionAccessPermissionSet",
+      {
+        instanceArn: ssoInstanceArn,
+        inlinePolicy,
+        name: "BastionAccess",
+        sessionDuration: "PT8H",
+        relayStateType:
+          "https://console.aws.amazon.com/systems-manager/managed-instances/rdp-connect",
+      }
+    );
   }
 }
