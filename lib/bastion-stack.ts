@@ -35,18 +35,20 @@ export class BastionStack extends Stack {
       )
     );
 
-    const instanceArn = this.node.tryGetContext("ssoInstanceArn:account=" + this.account);
+    const ssoInstanceArn = this.node.tryGetContext("ssoInstanceArn:account=" + this.account);
 
-    if (!instanceArn) {
+    if (!ssoInstanceArn) {
       console.error(
         `missing context 'ssoInstanceArn:account=${this.account}'. Add it to 'cdk.context.json'.`
       );
     }
 
     const permissionSet = new aws_sso.CfnPermissionSet(this, "PermissionSet", {
-      instanceArn,
+      instanceArn: ssoInstanceArn,
       inlinePolicy,
       name: "BastionPermissionSet",
+      sessionDuration: 'PT8H',
+      relayStateType: 'https://console.aws.amazon.com/systems-manager/managed-instances/rdp-connect'
     });
   }
 }

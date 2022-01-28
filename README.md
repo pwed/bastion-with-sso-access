@@ -1,14 +1,7 @@
-# Welcome to your CDK TypeScript project!
+# Windows bastion with AWS SSO access
 
-This is a blank project for TypeScript development with CDK.
+This template will deploy a Windows bastion server that can be accessed through Fleet Manager under Systems Manager using an SSO user
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Screenshot
 
-## Useful commands
-
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+![](docs/FleetManager.png)
