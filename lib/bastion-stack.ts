@@ -6,8 +6,8 @@ import {
   StackProps,
   Tags,
 } from "aws-cdk-lib";
+import { BlockDeviceVolume } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import inlinePolicy from "./bastion-permission-set.json";
 
 export class BastionStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -23,11 +23,19 @@ export class BastionStack extends Stack {
       ),
       vpc: aws_ec2.Vpc.fromLookup(this, "DefaultVpc", { isDefault: true }),
       vpcSubnets: { subnetType: aws_ec2.SubnetType.PUBLIC },
+      blockDevices: [
+        {
+          deviceName: "/dev/xvda",
+          volume: BlockDeviceVolume.ebs(10, {
+            volumeType: aws_ec2.EbsDeviceVolumeType.GP3,
+            iops: 3000,
+            encrypted: true,
+          }),
+        },
+      ],
     });
 
-    // I have a custom schedule set up with the instance scheduler that
-    //   will stop the instance at 11:59 pm if I forget to :)
-    Tags.of(bastionInstance.instance).add("Schedule", "stop-nightly");
+    Tags.of(bastionInstance.instance).add("security:bastion", "true");
 
     bastionInstance.role.addManagedPolicy(
       aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
@@ -45,17 +53,137 @@ export class BastionStack extends Stack {
       );
     }
 
-    const permissionSet = new aws_sso.CfnPermissionSet(
-      this,
-      "BastionAccessPermissionSet",
-      {
-        instanceArn: ssoInstanceArn,
-        inlinePolicy,
-        name: "BastionAccess",
-        sessionDuration: "PT8H",
-        relayStateType:
-          "https://console.aws.amazon.com/systems-manager/managed-instances/rdp-connect",
-      }
-    );
+    new aws_sso.CfnPermissionSet(this, "BastionAccessPermissionSet", {
+      instanceArn: ssoInstanceArn,
+      inlinePolicy: getPermissionSet(),
+      name: "BastionAccess",
+      sessionDuration: "PT8H",
+      relayStateType:
+        "https://console.aws.amazon.com/systems-manager/managed-instances/rdp-connect",
+    });
   }
+}
+
+function getPermissionSet(): any {
+  return {
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Sid: "SSO",
+        Effect: "Allow",
+        Action: [
+          "sso:ListDirectoryAssociations*",
+          "identitystore:DescribeUser",
+        ],
+        Resource: "*",
+      },
+      {
+        Sid: "EC2",
+        Effect: "Allow",
+        Action: ["ec2:DescribeInstances"],
+        Resource: "*",
+      },
+      {
+        Sid: "EC22",
+        Effect: "Allow",
+        Action: ["ec2:GetPasswordData"],
+        Resource: "*",
+        Condition: {
+          StringEquals: {
+            "aws:ResourceTag/security:bastion": "true",
+          },
+        },
+      },
+      {
+        Sid: "SSM",
+        Effect: "Allow",
+        Action: [
+          "ssm:DescribeInstanceProperties",
+          "ssm:GetCommandInvocation",
+          "ssm:GetInventorySchema",
+        ],
+        Resource: "*",
+      },
+      {
+        Sid: "TerminateSession",
+        Effect: "Allow",
+        Action: ["ssm:TerminateSession"],
+        Resource: "*",
+        Condition: {
+          StringLike: {
+            "ssm:resourceTag/aws:ssmmessages:session-id": ["${aws:userName}"],
+          },
+        },
+      },
+      {
+        Sid: "SSMGetDocument",
+        Effect: "Allow",
+        Action: ["ssm:GetDocument"],
+        Resource: [
+          "arn:aws:ssm:*:*:document/AWS-StartPortForwardingSession",
+          "arn:aws:ssm:*:*:document/SSM-SessionManagerRunShell",
+        ],
+      },
+      {
+        Sid: "SSMStartSession",
+        Effect: "Allow",
+        Action: ["ssm:StartSession"],
+        Resource: [
+          "arn:aws:ssm:*:*:managed-instance/*",
+          "arn:aws:ssm:*:*:document/AWS-StartPortForwardingSession",
+        ],
+        Condition: {
+          BoolIfExists: {
+            "ssm:SessionDocumentAccessCheck": "true",
+          },
+        },
+      },
+      {
+        Sid: "SSMStartSession2",
+        Effect: "Allow",
+        Action: ["ssm:StartSession"],
+        Resource: ["arn:aws:ec2:*:*:instance/*"],
+        Condition: {
+          StringEquals: {
+            "aws:ResourceTag/security:bastion": "true",
+          },
+        },
+      },
+      {
+        Sid: "SSMSendCommand",
+        Effect: "Allow",
+        Action: ["ssm:SendCommand"],
+        Resource: [
+          "arn:aws:ssm:*:*:managed-instance/*",
+          "arn:aws:ssm:*:*:document/AWSSSO-CreateSSOUser",
+        ],
+        Condition: {
+          BoolIfExists: {
+            "ssm:SessionDocumentAccessCheck": "true",
+          },
+        },
+      },
+      {
+        Sid: "SSMSendCommand2",
+        Effect: "Allow",
+        Action: ["ssm:SendCommand"],
+        Resource: ["arn:aws:ec2:*:*:instance/*"],
+        Condition: {
+          StringEquals: {
+            "aws:ResourceTag/security:bastion": "true",
+          },
+        },
+      },
+      {
+        Sid: "GuiConnect",
+        Effect: "Allow",
+        Action: [
+          "ssm-guiconnect:CancelConnection",
+          "ssm-guiconnect:GetConnection",
+          "ssm-guiconnect:StartConnection",
+        ],
+        Resource: "*",
+      },
+    ],
+  };
 }

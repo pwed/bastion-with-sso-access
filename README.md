@@ -4,4 +4,14 @@ This template will deploy a Windows bastion server that can be accessed through 
 
 ## Screenshot
 
-![](docs/FleetManager.png)
+![Screenshot](docs/FleetManager.png)
+
+## Wishlist
+
+- [ ] Fill out readme
+- [ ] Investigate an on demand tmp server model
+  - [ ] Step function to time out the machine after 4h?
+- [ ] Caveats
+- [ ] Benifits
+- [ ] Customer Use cases
+- [ ] Potential alterations
