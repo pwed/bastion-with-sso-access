@@ -114,6 +114,7 @@ function getPermissionSet(
         effect: aws_iam.Effect.ALLOW,
         actions: [
           "ec2:GetPasswordData",
+          "ec2:StartInstances",
           "ssm:GetConnectionStatus",
           "ssm:SendCommand",
           "ssm:StartSession",

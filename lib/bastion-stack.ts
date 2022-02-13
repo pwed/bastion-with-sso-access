@@ -1,5 +1,6 @@
 import { aws_ec2, aws_iam, Stack, StackProps, Tags } from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { KeyPair } from 'cdk-ec2-key-pair';
 
 interface BastionStackProps extends StackProps {
   securityTagKey?: string;
@@ -17,6 +18,12 @@ export class BastionStack extends Stack {
     const securityTagValue = props?.securityTagValue
       ? props.securityTagValue
       : "true";
+
+    const key = new KeyPair(this, "key", {
+      name: "bastion-key",
+      storePublicKey: false,
+    })
+    Tags.of(key).add(securityTagKey, securityTagValue)
 
     const bastionInstance = new aws_ec2.Instance(this, "BastionInstance", {
       instanceType: aws_ec2.InstanceType.of(
@@ -37,6 +44,7 @@ export class BastionStack extends Stack {
           }),
         },
       ],
+      keyName: key.keyPairName
     });
     if (props?.securityGroups) {
       props.securityGroups.forEach((s) => {
