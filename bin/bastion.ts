@@ -13,14 +13,12 @@ const ssoStack = new BastionSsoStack(app, "BastionSsoStack", {
     account: "967803995830",
     region: "us-east-1",
   },
-  ssoInstanceArn: "arn:aws:sso:::instance/ssoins-7223575bcae77877",
+  ssoInstanceArn: "arn:aws:sso:::instance/ssoins-72239eeffc775414",
   targetAccounts: ["806124249357"],
-  userGuids: ["9067545123-35b2a7c5-aaa4-4b80-b8b5-6918aa5db5f3"],
-  securityTagKey: "sec:bastion",
-  securityTagValue: "dev",
+  userGuids: ["90675e1075-cfd89cb1-77fb-4900-b072-a9f063d507d8"],
 });
 
-const rdsExampleStack = new RdsStack(app, "RdsExampleStack", {
+const bastionStack = new BastionStack(app, "BastionStack", {
   env: {
     account: "806124249357",
     region: "us-east-1",
@@ -29,14 +27,14 @@ const rdsExampleStack = new RdsStack(app, "RdsExampleStack", {
   securityTagValue: ssoStack.securityTagValue,
 });
 
-new BastionStack(app, "BastionStack", {
+new RdsStack(app, "RdsExampleStack", {
   env: {
     account: "806124249357",
     region: "us-east-1",
   },
   securityTagKey: ssoStack.securityTagKey,
   securityTagValue: ssoStack.securityTagValue,
-  securityGroups: [rdsExampleStack.rdsAccessSecurityGroup],
+  allowSecurityGroups: [bastionStack.securityGroup],
 });
 
 new BastionMaintanenceStack(app, "BastionMaintanenceStack", {

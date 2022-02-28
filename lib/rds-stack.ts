@@ -12,11 +12,10 @@ import { Construct } from "constructs";
 interface RdsStackProps extends StackProps {
   securityTagKey?: string;
   securityTagValue?: string;
+  allowSecurityGroups?: aws_ec2.ISecurityGroup[];
 }
 
 export class RdsStack extends Stack {
-  rdsAccessSecurityGroup: aws_ec2.SecurityGroup;
-
   constructor(scope: Construct, id: string, props?: RdsStackProps) {
     super(scope, id, props);
 
@@ -28,15 +27,6 @@ export class RdsStack extends Stack {
       : "true";
 
     const vpc = aws_ec2.Vpc.fromLookup(this, "DefaultVpc", { isDefault: true });
-
-    this.rdsAccessSecurityGroup = new aws_ec2.SecurityGroup(
-      this,
-      "RdsAccessSg",
-      {
-        vpc,
-        allowAllOutbound: true,
-      }
-    );
 
     const rdsSecurityGroup = new aws_ec2.SecurityGroup(this, "RdsSg", {
       vpc,
@@ -71,14 +61,16 @@ export class RdsStack extends Stack {
       },
     });
 
-    rdsSecurityGroup.addIngressRule(
-      this.rdsAccessSecurityGroup,
-      new aws_ec2.Port({
-        protocol: aws_ec2.Protocol.TCP,
-        fromPort: rdsInstance.clusterEndpoint.port,
-        toPort: rdsInstance.clusterEndpoint.port,
-        stringRepresentation: "MySQL",
-      })
-    );
+    props?.allowSecurityGroups?.forEach((sg) => {
+      rdsSecurityGroup.addIngressRule(
+        sg,
+        new aws_ec2.Port({
+          fromPort: rdsInstance.clusterEndpoint.port,
+          toPort: rdsInstance.clusterEndpoint.port,
+          protocol: aws_ec2.Protocol.TCP,
+          stringRepresentation: "MySQL",
+        })
+      );
+    });
   }
 }

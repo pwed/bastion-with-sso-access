@@ -1,5 +1,6 @@
 import { aws_iam, aws_sso, Stack, StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { pwed_bastion } from "pwed-cdk";
 
 interface BastionSsoStackProps extends StackProps {
   ssoInstanceArn: string;
@@ -12,6 +13,11 @@ interface BastionSsoStackProps extends StackProps {
   securityTagValue?: string;
 }
 
+interface principal {
+  id: string;
+  type: string;
+}
+
 export class BastionSsoStack extends Stack {
   securityTagKey: string;
   securityTagValue: string;
@@ -19,67 +25,39 @@ export class BastionSsoStack extends Stack {
   constructor(scope: Construct, id: string, props: BastionSsoStackProps) {
     super(scope, id, props);
 
-    const securityTagKey = props.securityTagKey
-      ? props.securityTagKey
-      : "security:bastion";
-    const securityTagValue = props.securityTagValue
-      ? props.securityTagValue
-      : "true";
-    this.securityTagKey = securityTagKey;
-    this.securityTagValue = securityTagValue;
-
     const ssoInstanceArn: string = props.ssoInstanceArn;
 
-    const permissionSet = new aws_sso.CfnPermissionSet(
+    const permissionSet = new pwed_bastion.BastionPermissionSet(
       this,
       "BastionAccessPermissionSet",
       {
-        instanceArn: ssoInstanceArn,
-        inlinePolicy: getPermissionSet(securityTagKey, securityTagValue),
-        name: props.permissionSetName
+        ssoInstanceArn,
+        permissionSetName: props.permissionSetName
           ? props.permissionSetName
-          : "BastionAccess",
-        sessionDuration: props.sessionDuration ? props.sessionDuration : "PT8H",
-        relayStateType:
-          "https://console.aws.amazon.com/systems-manager/managed-instances/rdp-connect",
+          : "BastionAccessRole",
       }
     );
 
-    const userGuids = props.userGuids;
-    const groupGuids = props.groupGuids;
+    const userGuids = props.userGuids ? props.userGuids : [];
+    const groupGuids = props.groupGuids ? props.groupGuids : [];
     const accounts = props.targetAccounts;
-    if (accounts) {
-      accounts.forEach((a) => {
+    let principals: principal[] = [
+      ...userGuids.map((u) => {
+        return { id: u, type: "USER" };
+      }),
+      ...groupGuids.map((g) => {
+        return { id: g, type: "GROUP" };
+      })
+    ]
+    if (accounts) 
+      accounts.forEach((account) => {
         if (userGuids) {
-          userGuids.forEach((u) => {
-            new aws_sso.CfnAssignment(this, `Account${a}User${u}`, {
-              permissionSetArn: permissionSet
-                .getAtt("PermissionSetArn")
-                .toString(),
-              principalType: "USER",
-              principalId: u,
-              instanceArn: ssoInstanceArn,
-              targetType: "AWS_ACCOUNT",
-              targetId: a,
-            });
-          });
-        }
-        if (groupGuids) {
-          groupGuids.forEach((g) => {
-            new aws_sso.CfnAssignment(this, `Account${a}Group${g}`, {
-              permissionSetArn: permissionSet
-                .getAtt("PermissionSetArn")
-                .toString(),
-              principalType: "GROUP",
-              principalId: g,
-              instanceArn: ssoInstanceArn,
-              targetType: "AWS_ACCOUNT",
-              targetId: a,
-            });
+          principals.forEach((principal) => {
+            permissionSet.assign(account, principal.id, principal.type);
           });
         }
       });
-    }
+    
   }
 }
 
