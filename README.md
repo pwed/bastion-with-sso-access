@@ -1,5 +1,7 @@
 # Windows bastion with AWS SSO access
 
+**This repo is now abandoned. All functionality is available in https://github.com/pwed/pwed-cdk**
+
 This project contains several reference stacks to show how to integrate RDP access through AWS SSO using SSM GuiConnect. By using Fleet Manager to connect to Windows instnaces we do not have to expose RDP access externally and the connection is tunneled through a SSM connection (similar to an SSH tunnel).
 
 ## Examples in this project
@@ -12,8 +14,3 @@ This project contains several reference stacks to show how to integrate RDP acce
 ## Screenshot
 
 ![Screenshot](docs/FleetManager.png)
-
-## TODO
-
-- Create IAM policy for when SSO isn't available
- - There is already a key to log in as Administrator stored in Secrets Manager
