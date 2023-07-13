@@ -23,8 +23,8 @@
   "dependencies": {
     "aws-cdk-lib": "2.12.0",
     "cdk-constants": "^3.0.3",
-    "cdk-ec2-key-pair": "^3.2.0",
     "constructs": "^10.2.45",
+    "cdk-ec2-key-pair": "^3.3.1",
     "pwed-cdk": "^0.1.24",
     "source-map-support": "^0.5.16"
   }
