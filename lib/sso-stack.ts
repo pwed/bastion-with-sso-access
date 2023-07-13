@@ -1,6 +1,6 @@
 import { aws_iam, aws_sso, Stack, StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { pwed_bastion } from "pwed-cdk";
+import { bastion } from "pwed-cdk";
 
 interface BastionSsoStackProps extends StackProps {
   ssoInstanceArn: string;
@@ -27,12 +27,12 @@ export class BastionSsoStack extends Stack {
 
     const ssoInstanceArn: string = props.ssoInstanceArn;
 
-    const permissionSet = new pwed_bastion.BastionPermissionSet(
+    const permissionSet = new bastion.BastionPermissionSet(
       this,
       "BastionAccessPermissionSet",
       {
-        ssoInstanceArn,
-        permissionSetName: props.permissionSetName
+        instanceArn: ssoInstanceArn,
+        name: props.permissionSetName
           ? props.permissionSetName
           : "BastionAccessRole",
       }
@@ -49,7 +49,7 @@ export class BastionSsoStack extends Stack {
         return { id: g, type: "GROUP" };
       })
     ]
-    if (accounts) 
+    if (accounts)
       accounts.forEach((account) => {
         if (userGuids) {
           principals.forEach((principal) => {
@@ -57,7 +57,7 @@ export class BastionSsoStack extends Stack {
           });
         }
       });
-    
+
   }
 }
 

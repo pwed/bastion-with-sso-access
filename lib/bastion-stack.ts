@@ -1,7 +1,7 @@
 import { aws_ec2, aws_iam, Stack, StackProps, Tags } from "aws-cdk-lib";
 import { Construct } from "constructs";
 // import { KeyPair } from "cdk-ec2-key-pair";
-import { pwed_bastion } from "pwed-cdk";
+import { bastion } from "pwed-cdk";
 
 interface BastionStackProps extends StackProps {
   securityTagKey?: string;
@@ -19,26 +19,26 @@ export class BastionStack extends Stack {
       isDefault: true,
     });
 
-    const wb = new pwed_bastion.WindowsBastion(this, "WindowsBastion", {
+    const wb = new bastion.WindowsBastion(this, "WindowsBastion", {
       vpc,
       vpcSubnets: vpc.selectSubnets({
         subnetType: aws_ec2.SubnetType.PUBLIC,
       }),
       windowsPackages: [
-          // packages to install with WinGet
-          "Amazon.AWSCLI",
-          "Amazon.SessionManagerPlugin",
-          "Docker.DockerDesktop",
-          "Google.Chrome",
-          "Microsoft.Powershell",
-          "Microsoft.VisualStudioCode",
-          "Microsoft.WindowsTerminal",
-          "Oracle.MySql",
-          "PostgresSQL.pgAdmin",
-        ]
+        // packages to install with WinGet
+        "Amazon.AWSCLI",
+        "Amazon.SessionManagerPlugin",
+        "Docker.DockerDesktop",
+        "Google.Chrome",
+        "Microsoft.Powershell",
+        "Microsoft.VisualStudioCode",
+        "Microsoft.WindowsTerminal",
+        "Oracle.MySql",
+        "PostgresSQL.pgAdmin",
+      ]
     });
 
     this.securityGroup = wb.securityGroup
-   
+
   }
 }
